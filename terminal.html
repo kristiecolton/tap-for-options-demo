@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Tap for Options Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one countertop terminal centred on the page (order left, decision right), presenter controls below it.
+   The device keeps one fixed look in both themes, like real hardware; only the page around it follows the theme. */
+:root {
+  --page: #E9ECF2;
+  --page-fg: #1A2233;
+  --page-muted: #566179;
+  --panel: #FFFFFF;
+  --panel-line: #CBD1DD;
+  --bezel: #16181D;
+  --screen: #FBFBFD;
+  --ink: #111827;
+  --ink-muted: #5B6474;
+  --tile: #F0F2F7;
+  --tile-line: #D5DAE4;
+  --accent: #1E4BD2;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3EAFF;
+  --good: #0D7148;
+  --good-soft: #DDF3E8;
+  --focus: #E8A317;
+  --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0C1019; --page-fg: #E8ECF4; --page-muted: #9AA5BB; --panel: #151B28; --panel-line: #2C3549;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0C1019; --page-fg: #E8ECF4; --page-muted: #9AA5BB; --panel: #151B28; --panel-line: #2C3549;
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html, body { background: var(--page); color: var(--page-fg); }
+body {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.4;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 40px;
+}
+.stage { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.device { background: var(--bezel); border-radius: 28px; padding: 18px; box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.55); }
+.screen {
+  background: var(--screen); color: var(--ink); border-radius: 14px; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); min-height: 500px;
+}
+@media (max-width: 720px) { .screen { grid-template-columns: minmax(0, 1fr); } .order { border-right: 0; border-bottom: 1px solid var(--tile-line); } }
+
+.order { padding: 24px; border-right: 1px solid var(--tile-line); display: flex; flex-direction: column; gap: 14px; }
+.merchant { font-size: 1.35rem; font-weight: 700; margin: 0; }
+.ticket { margin: 0; color: var(--ink-muted); font-size: 0.9rem; }
+.order ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.order li, .total { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.total { margin-top: auto; border-top: 1px solid var(--tile-line); padding-top: 12px; font-size: 1.35rem; font-weight: 700; }
+
+.decide { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.decide-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+h2 { margin: 0; font-size: 1.7rem; line-height: 1.15; }
+.nfc {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
+  border: 1.5px dashed var(--ink-muted); border-radius: 999px; color: var(--ink-muted); font-size: 0.85rem;
+}
+.nfc.live { border-style: solid; border-color: var(--accent); color: var(--accent); }
+
+.banner {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px;
+  background: var(--accent-soft); color: var(--ink); font-weight: 700;
+}
+.banner.good { background: var(--good-soft); }
+.banner svg { flex: none; color: var(--accent); }
+.banner.good svg { color: var(--good); }
+
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tiles.three { grid-template-columns: minmax(0, 1fr); }
+.tile {
+  min-height: 92px; border-radius: 14px; border: 2px solid var(--tile-line); background: var(--tile); color: var(--ink);
+  font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer;
+}
+.tiles.three .tile { min-height: 64px; flex-direction: row; font-size: 1.2rem; font-weight: 700; }
+.tile b { font-size: 1.6rem; }
+.tile span { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.tile.chosen { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.tile.chosen span { color: inherit; }
+.waiting .tile:not(.chosen) { opacity: 0.4; }
+
+.pay { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
+.pay .amount { font-size: 3rem; font-weight: 700; font-variant-numeric: tabular-nums; margin: 0; }
+.pay .prompt { font-size: 1.25rem; margin: 0; }
+.pay .meta { color: var(--ink-muted); margin: 0; }
+.pay svg { color: var(--accent); }
+
+.presenter {
+  background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 12px; color: var(--page-fg);
+}
+.presenter h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--page-muted); }
+.presenter .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.presenter .label { color: var(--page-muted); min-width: 92px; font-size: 0.9rem; }
+.presenter button {
+  font: inherit; font-size: 0.92rem; padding: 7px 12px; border-radius: 8px;
+  border: 1px solid var(--panel-line); background: transparent; color: var(--page-fg); cursor: pointer;
+}
+.presenter button:hover { border-color: var(--page-muted); }
+kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--panel-line); color: var(--page-muted); margin-left: 4px; }
+.presenter p { margin: 0; color: var(--page-muted); font-size: 0.88rem; }
+
+:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .nfc.live svg, .banner.pulse svg { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="device">
+    <div class="screen">
+      <section class="order" aria-label="Order">
+        <p class="merchant">Juniper Coffee</p>
+        <p class="ticket">Order 1042 · Counter</p>
+        <ul>
+          <li><span>Oat latte × 2</span><span>$11.00</span></li>
+          <li><span>Breakfast sandwich</span><span>$9.50</span></li>
+          <li><span>Almond croissant</span><span>$3.50</span></li>
+          <li id="o-tip-row" hidden><span>Tip</span><span id="o-tip"></span></li>
+        </ul>
+        <div class="total"><span>Total</span><span id="o-total">$24.00</span></div>
+      </section>
+
+      <section class="decide" id="decide">
+        <div class="decide-head">
+          <h2 id="decide-h">Add a tip</h2>
+          <span class="nfc" id="nfc">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8.5a5 5 0 0 1 0 7"/><path d="M9.5 6a9 9 0 0 1 0 12"/><path d="M13 3.5a13 13 0 0 1 0 17"/></svg>
+            <span id="nfc-text">Tap phone here for spoken options</span>
+          </span>
+        </div>
+
+        <div class="banner" id="banner" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>
+          <span id="banner-text"></span>
+        </div>
+
+        <div class="tiles" id="tip-tiles">
+          <button type="button" class="tile" data-pct="15"><b>15%</b><span>$3.60</span></button>
+          <button type="button" class="tile" data-pct="20"><b>20%</b><span>$4.80</span></button>
+          <button type="button" class="tile" data-pct="25"><b>25%</b><span>$6.00</span></button>
+          <button type="button" class="tile" data-pct="0"><b>No tip</b><span>$0.00</span></button>
+        </div>
+
+        <div class="tiles three" id="receipt-tiles" hidden>
+          <button type="button" class="tile" data-receipt="text">Text message</button>
+          <button type="button" class="tile" data-receipt="email">Email</button>
+          <button type="button" class="tile" data-receipt="none">No receipt</button>
+        </div>
+
+        <div class="pay" id="pay" hidden>
+          <svg viewBox="0 0 24 24" width="72" height="72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 8.5a5 5 0 0 1 0 7"/><path d="M9.5 6a9 9 0 0 1 0 12"/><path d="M13 3.5a13 13 0 0 1 0 17"/></svg>
+          <p class="amount" id="pay-total">$24.00</p>
+          <p class="prompt">Tap, insert, or swipe to pay</p>
+          <p class="meta" id="pay-meta"></p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="presenter" id="presenter" aria-label="Presenter controls">
+    <h3>Presenter controls · concept demo</h3>
+    <div class="row">
+      <span class="label">Phone</span>
+      <button type="button" data-act="tap">Phone tapped<kbd>P</kbd></button>
+    </div>
+    <div class="row">
+      <span class="label">Phone picks tip</span>
+      <button type="button" data-act="tip" data-pct="15">15%<kbd>1</kbd></button>
+      <button type="button" data-act="tip" data-pct="20">20%<kbd>2</kbd></button>
+      <button type="button" data-act="tip" data-pct="25">25%<kbd>3</kbd></button>
+      <button type="button" data-act="tip" data-pct="0">No tip<kbd>0</kbd></button>
+    </div>
+    <div class="row">
+      <span class="label">Phone picks receipt</span>
+      <button type="button" data-act="receipt" data-receipt="text">Text<kbd>T</kbd></button>
+      <button type="button" data-act="receipt" data-receipt="email">Email<kbd>E</kbd></button>
+      <button type="button" data-act="receipt" data-receipt="none">None<kbd>N</kbd></button>
+    </div>
+    <div class="row">
+      <span class="label">Demo</span>
+      <button type="button" data-act="reset">Reset<kbd>R</kbd></button>
+      <button type="button" data-act="hide">Hide this panel<kbd>H</kbd></button>
+    </div>
+    <p>Use these to make the terminal react as you choose on the phone. Press H to hide or show this panel while recording.</p>
+  </section>
+</div>
+
+<script>
+const SUBTOTAL = 24;
+const RECEIPTS = { text: "Text message receipt", email: "Email receipt", none: "No receipt" };
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => "$" + n.toFixed(2);
+const state = { step: "tip", phone: false, tip: 0, pct: 0, timer: null };
+
+function banner(text, kind) {
+  const b = $("banner");
+  if (!text) { b.hidden = true; return; }
+  b.hidden = false;
+  b.className = "banner" + (kind === "good" ? " good" : " pulse");
+  $("banner-text").textContent = text;
+}
+
+function showStep(step) {
+  state.step = step;
+  $("tip-tiles").hidden = step !== "tip";
+  $("receipt-tiles").hidden = step !== "receipt";
+  $("pay").hidden = step !== "pay";
+  $("decide-h").textContent = { tip: "Add a tip", receipt: "Receipt", pay: "Ready to pay" }[step];
+  $("decide").classList.toggle("waiting", state.phone && step !== "pay");
+  document.querySelectorAll(".tile.chosen").forEach((t) => t.classList.remove("chosen"));
+  if (state.phone && step !== "pay") banner("Options open on the customer's phone");
+}
+
+function phoneTapped() {
+  if (state.step === "pay") return;
+  state.phone = true;
+  $("nfc").classList.add("live");
+  $("nfc-text").textContent = "Customer's phone connected";
+  $("decide").classList.add("waiting");
+  banner("Options open on the customer's phone");
+}
+
+function pickTip(pct, viaPhone) {
+  if (state.step !== "tip") return;
+  if (viaPhone && !state.phone) phoneTapped();
+  clearTimeout(state.timer);
+  state.pct = pct;
+  state.tip = Math.round(SUBTOTAL * pct) / 100;
+  document.querySelector(`#tip-tiles [data-pct="${pct}"]`).classList.add("chosen");
+  $("o-tip-row").hidden = pct === 0;
+  $("o-tip").textContent = fmt(state.tip);
+  $("o-total").textContent = fmt(SUBTOTAL + state.tip);
+  if (viaPhone) banner(pct ? `Chosen on the customer's phone: ${pct}% tip (${fmt(state.tip)})` : "Chosen on the customer's phone: no tip", "good");
+  state.timer = setTimeout(() => showStep("receipt"), 1400);
+}
+
+function pickReceipt(kind, viaPhone) {
+  if (state.step !== "receipt") return;
+  clearTimeout(state.timer);
+  document.querySelector(`#receipt-tiles [data-receipt="${kind}"]`).classList.add("chosen");
+  if (viaPhone) banner(`Chosen on the customer's phone: ${RECEIPTS[kind].toLowerCase()}`, "good");
+  state.timer = setTimeout(() => {
+    $("pay-total").textContent = fmt(SUBTOTAL + state.tip);
+    const tipText = state.pct ? `${state.pct}% tip` : "No tip";
+    $("pay-meta").textContent = `${tipText} · ${RECEIPTS[kind]}` + (state.phone ? " · chosen on the customer's phone" : "");
+    banner(null);
+    $("nfc-text").textContent = "Tap to pay";
+    showStep("pay");
+  }, 1400);
+}
+
+function reset() {
+  clearTimeout(state.timer);
+  Object.assign(state, { phone: false, tip: 0, pct: 0 });
+  $("nfc").classList.remove("live");
+  $("nfc-text").textContent = "Tap phone here for spoken options";
+  $("o-tip-row").hidden = true;
+  $("o-total").textContent = fmt(SUBTOTAL);
+  banner(null);
+  showStep("tip");
+}
+
+function togglePresenter() {
+  $("presenter").hidden = !$("presenter").hidden;
+}
+
+document.querySelectorAll("#tip-tiles .tile").forEach((t) => t.addEventListener("click", () => pickTip(Number(t.dataset.pct), false)));
+document.querySelectorAll("#receipt-tiles .tile").forEach((t) => t.addEventListener("click", () => pickReceipt(t.dataset.receipt, false)));
+
+document.querySelectorAll("#presenter [data-act]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const act = btn.dataset.act;
+    if (act === "tap") phoneTapped();
+    else if (act === "tip") pickTip(Number(btn.dataset.pct), true);
+    else if (act === "receipt") pickReceipt(btn.dataset.receipt, true);
+    else if (act === "reset") reset();
+    else if (act === "hide") togglePresenter();
+  });
+});
+
+const KEYS = { p: () => phoneTapped(), "1": () => pickTip(15, true), "2": () => pickTip(20, true), "3": () => pickTip(25, true), "0": () => pickTip(0, true),
+  t: () => pickReceipt("text", true), e: () => pickReceipt("email", true), n: () => pickReceipt("none", true), r: () => reset(), h: () => togglePresenter() };
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const fn = KEYS[e.key.toLowerCase()];
+  if (fn) { e.preventDefault(); fn(); }
+});
+</script>
+</body>
+</html>

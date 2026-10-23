@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Tap for Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one column, one decision per screen; every control is a full-width button sized for thumbs and screen readers */
+:root {
+  --bg: #F3F5FA;
+  --surface: #FFFFFF;
+  --fg: #0E1726;
+  --muted: #4A5568;
+  --line: #C5CCDA;
+  --accent: #1E4BD2;
+  --accent-ink: #FFFFFF;
+  --good: #0D7148;
+  --focus: #E8A317;
+  --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1020; --surface: #151C2E; --fg: #F1F4FA; --muted: #AAB4C8; --line: #323D57;
+    --accent: #9DB6FF; --accent-ink: #0B1020; --good: #5FD39C; --focus: #FFC24D;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1020; --surface: #151C2E; --fg: #F1F4FA; --muted: #AAB4C8; --line: #323D57;
+  --accent: #9DB6FF; --accent-ink: #0B1020; --good: #5FD39C; --focus: #FFC24D;
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--fg); }
+body {
+  font-family: var(--font);
+  font-size: 18px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 36px;
+}
+.wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.merchant { font-size: 1.3rem; font-weight: 700; margin: 2px 0 0; }
+
+.order { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.order ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.order li, .total { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.total { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; font-weight: 700; font-size: 1.15rem; }
+
+h1 { font-size: 1.6rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+section.step { display: flex; flex-direction: column; gap: 14px; }
+.choices { display: grid; gap: 12px; }
+
+.choice {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  min-height: 64px; padding: 0 20px;
+  border-radius: 14px; border: 2px solid var(--line);
+  background: var(--surface); color: var(--fg);
+  font: inherit; font-size: 1.25rem; font-weight: 700; text-align: left; cursor: pointer;
+}
+.choice .amt { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.choice.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); justify-content: center; }
+.choice.quiet { min-height: 52px; font-size: 1.05rem; font-weight: 400; justify-content: center; }
+
+.status {
+  margin: 0; padding: 12px 14px; border-radius: 12px;
+  border: 2px solid var(--good); color: var(--fg); background: var(--surface); font-weight: 700;
+}
+.summary { margin: 0; display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.summary div { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.summary dt { color: var(--muted); }
+.summary dd { margin: 0; font-weight: 700; text-align: right; }
+
+form { display: grid; gap: 10px; }
+label { font-weight: 700; }
+input {
+  font: inherit; font-size: 1.3rem; min-height: 56px; padding: 0 16px;
+  border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--fg);
+}
+.error { margin: 0; color: var(--fg); font-weight: 700; }
+.note { font-size: 0.85rem; color: var(--muted); margin: 8px 0 0; }
+
+:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .choice { transition: transform 0.08s ease; }
+  .choice:active { transform: scale(0.98); }
+}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Tap for Options</p>
+    <p class="merchant">Juniper Coffee</p>
+  </header>
+
+  <section class="order" aria-label="Your order">
+    <ul>
+      <li><span>Oat latte × 2</span><span>$11.00</span></li>
+      <li><span>Breakfast sandwich</span><span>$9.50</span></li>
+      <li><span>Almond croissant</span><span>$3.50</span></li>
+      <li id="tip-row" hidden><span>Tip</span><span id="tip-amt"></span></li>
+    </ul>
+    <div class="total"><span>Total</span><span id="total">$24.00</span></div>
+  </section>
+
+  <p id="status" class="status" tabindex="-1" hidden></p>
+
+  <section id="step-tip" class="step" aria-labelledby="tip-h">
+    <h1 id="tip-h" tabindex="-1">Add a tip?</h1>
+    <div class="choices">
+      <button type="button" class="choice" data-pct="15">15% <span class="amt">$3.60</span></button>
+      <button type="button" class="choice" data-pct="20">20% <span class="amt">$4.80</span></button>
+      <button type="button" class="choice" data-pct="25">25% <span class="amt">$6.00</span></button>
+      <button type="button" class="choice" id="custom-btn" aria-expanded="false" aria-controls="custom-form">Custom amount</button>
+      <form id="custom-form" hidden novalidate>
+        <label for="custom-amt">Tip amount in dollars</label>
+        <input id="custom-amt" name="custom-amt" inputmode="decimal" autocomplete="off" placeholder="5.00">
+        <p id="custom-err" class="error" role="alert"></p>
+        <button type="submit" class="choice primary">Add tip</button>
+      </form>
+      <button type="button" class="choice" data-pct="0">No tip</button>
+    </div>
+  </section>
+
+  <section id="step-receipt" class="step" aria-labelledby="receipt-h" hidden>
+    <h1 id="receipt-h" tabindex="-1">How would you like your receipt?</h1>
+    <div class="choices">
+      <button type="button" class="choice" data-receipt="text">Text message</button>
+      <button type="button" class="choice" data-receipt="email">Email</button>
+      <button type="button" class="choice" data-receipt="none">No receipt</button>
+      <button type="button" class="choice quiet" id="back-btn">Change tip</button>
+    </div>
+  </section>
+
+  <section id="step-done" class="step" aria-labelledby="done-h" hidden>
+    <h1 id="done-h" tabindex="-1">You're all set</h1>
+    <dl class="summary">
+      <div><dt>Tip</dt><dd id="sum-tip"></dd></div>
+      <div><dt>Receipt</dt><dd id="sum-receipt"></dd></div>
+      <div><dt>Total</dt><dd id="sum-total"></dd></div>
+    </dl>
+    <p>Tap your card or phone on the reader when you're ready to pay.</p>
+    <button type="button" class="choice quiet" id="restart-btn">Start over</button>
+  </section>
+
+  <p class="note">Concept demo. No payment is taken and nothing is sent.</p>
+</main>
+
+<script>
+const SUBTOTAL = 24;
+const RECEIPTS = { text: "Text message", email: "Email", none: "No receipt" };
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => "$" + n.toFixed(2);
+const state = { tip: 0, tipText: "No tip" };
+
+function show(step) {
+  for (const id of ["step-tip", "step-receipt", "step-done"]) $(id).hidden = id !== step;
+}
+
+function setTip(amount, pct) {
+  state.tip = amount;
+  state.tipText = amount === 0 ? "No tip" : pct ? `${pct}% (${fmt(amount)})` : fmt(amount);
+  $("tip-row").hidden = amount === 0;
+  $("tip-amt").textContent = fmt(amount);
+  $("total").textContent = fmt(SUBTOTAL + amount);
+
+  const status = $("status");
+  status.textContent = amount === 0
+    ? `No tip. Your total is ${fmt(SUBTOTAL)}.`
+    : `${pct ? pct + "% tip" : fmt(amount) + " tip"} added. Your total is now ${fmt(SUBTOTAL + amount)}.`;
+  status.hidden = false;
+  show("step-receipt");
+  status.focus();
+}
+
+function setReceipt(kind) {
+  $("sum-tip").textContent = state.tipText;
+  $("sum-receipt").textContent = RECEIPTS[kind];
+  $("sum-total").textContent = fmt(SUBTOTAL + state.tip);
+  $("status").hidden = true;
+  show("step-done");
+  $("done-h").focus();
+}
+
+function restart() {
+  state.tip = 0;
+  state.tipText = "No tip";
+  $("tip-row").hidden = true;
+  $("total").textContent = fmt(SUBTOTAL);
+  $("status").hidden = true;
+  closeCustom();
+  show("step-tip");
+  $("tip-h").focus();
+}
+
+function closeCustom() {
+  $("custom-form").hidden = true;
+  $("custom-btn").setAttribute("aria-expanded", "false");
+  $("custom-err").textContent = "";
+  $("custom-amt").value = "";
+}
+
+document.querySelectorAll("[data-pct]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const pct = Number(btn.dataset.pct);
+    closeCustom();
+    setTip(Math.round(SUBTOTAL * pct) / 100, pct || null);
+  });
+});
+
+$("custom-btn").addEventListener("click", () => {
+  const form = $("custom-form");
+  form.hidden = !form.hidden;
+  $("custom-btn").setAttribute("aria-expanded", String(!form.hidden));
+  if (!form.hidden) $("custom-amt").focus();
+});
+
+$("custom-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const raw = $("custom-amt").value.replace(/[$,\s]/g, "");
+  const amount = Number(raw);
+  if (raw === "" || !Number.isFinite(amount) || amount < 0 || amount > 500) {
+    $("custom-err").textContent = "Enter a tip amount in dollars, like 5 or 5.50.";
+    $("custom-amt").focus();
+    return;
+  }
+  const rounded = Math.round(amount * 100) / 100;
+  closeCustom();
+  setTip(rounded, null);
+});
+
+document.querySelectorAll("[data-receipt]").forEach((btn) => {
+  btn.addEventListener("click", () => setReceipt(btn.dataset.receipt));
+});
+
+$("back-btn").addEventListener("click", restart);
+$("restart-btn").addEventListener("click", restart);
+</script>
+</body>
+</html>
