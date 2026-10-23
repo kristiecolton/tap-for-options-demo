@@ -34,43 +34,50 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --page: #0C1019; --page-fg: #E8ECF4; --page-muted: #9AA5BB; --panel: #151B28; --panel-line: #2C3549;
+    --screen: #0F1420; --ink: #F1F4FA; --ink-muted: #A3AEC3; --tile: #182033; --tile-line: #2E3850;
+    --accent: #9DB6FF; --accent-ink: #0B1020; --accent-soft: #1D2A4D; --good: #5FD39C; --good-soft: #15352A;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --page: #0C1019; --page-fg: #E8ECF4; --page-muted: #9AA5BB; --panel: #151B28; --panel-line: #2C3549;
+  --screen: #0F1420; --ink: #F1F4FA; --ink-muted: #A3AEC3; --tile: #182033; --tile-line: #2E3850;
+  --accent: #9DB6FF; --accent-ink: #0B1020; --accent-soft: #1D2A4D; --good: #5FD39C; --good-soft: #15352A;
   color-scheme: dark;
 }
 
 [hidden] { display: none !important; }
-html, body { background: var(--page); color: var(--page-fg); }
+html, body { background: var(--screen); color: var(--ink); }
 body {
   font-family: var(--font);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.4;
+}
+.stage { min-height: 100vh; display: flex; flex-direction: column; }
+
+.device {
+  flex: 1; display: flex;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 24px 40px;
 }
-.stage { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-
-.device { background: var(--bezel); border-radius: 28px; padding: 18px; box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.55); }
 .screen {
-  background: var(--screen); color: var(--ink); border-radius: 14px; overflow: hidden;
-  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); min-height: 500px;
+  flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; color: var(--ink);
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); min-height: 560px;
 }
 @media (max-width: 720px) { .screen { grid-template-columns: minmax(0, 1fr); } .order { border-right: 0; border-bottom: 1px solid var(--tile-line); } }
 
-.order { padding: 24px; border-right: 1px solid var(--tile-line); display: flex; flex-direction: column; gap: 14px; }
+.order { padding: 40px 32px 32px 0; border-right: 1px solid var(--tile-line); display: flex; flex-direction: column; gap: 14px; }
+@media (max-width: 720px) { .order { padding: 24px 0; } }
 .merchant { font-size: 1.35rem; font-weight: 700; margin: 0; }
 .ticket { margin: 0; color: var(--ink-muted); font-size: 0.9rem; }
 .order ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .order li, .total { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
 .total { margin-top: auto; border-top: 1px solid var(--tile-line); padding-top: 12px; font-size: 1.35rem; font-weight: 700; }
 
-.decide { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.decide { padding: 40px 0 32px 32px; display: flex; flex-direction: column; gap: 18px; }
+@media (max-width: 720px) { .decide { padding: 24px 0; } }
 .decide-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-h2 { margin: 0; font-size: 1.7rem; line-height: 1.15; }
+h2 { margin: 0; font-size: 2rem; line-height: 1.15; }
 .nfc {
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
   border: 1.5px dashed var(--ink-muted); border-radius: 999px; color: var(--ink-muted); font-size: 0.85rem;
@@ -88,7 +95,7 @@ h2 { margin: 0; font-size: 1.7rem; line-height: 1.15; }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .tiles.three { grid-template-columns: minmax(0, 1fr); }
 .tile {
-  min-height: 92px; border-radius: 14px; border: 2px solid var(--tile-line); background: var(--tile); color: var(--ink);
+  min-height: 112px; border-radius: 14px; border: 2px solid var(--tile-line); background: var(--tile); color: var(--ink);
   font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer;
 }
 .tiles.three .tile { min-height: 64px; flex-direction: row; font-size: 1.2rem; font-weight: 700; }
@@ -105,6 +112,7 @@ h2 { margin: 0; font-size: 1.7rem; line-height: 1.15; }
 .pay svg { color: var(--accent); }
 
 .presenter {
+  width: min(1120px, calc(100% - 32px)); margin: 8px auto 24px;
   background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; padding: 16px 18px;
   display: flex; flex-direction: column; gap: 12px; color: var(--page-fg);
 }
