@@ -78,11 +78,6 @@ body {
 @media (max-width: 720px) { .decide { padding: 24px 0; } }
 .decide-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 h2 { margin: 0; font-size: 2rem; line-height: 1.15; }
-.nfc {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
-  border: 1.5px dashed var(--ink-muted); border-radius: 999px; color: var(--ink-muted); font-size: 0.85rem;
-}
-.nfc.live { border-style: solid; border-color: var(--accent); color: var(--accent); }
 
 .banner {
   display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px;
@@ -145,7 +140,7 @@ kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius:
 
 :focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
 @media (prefers-reduced-motion: no-preference) {
-  .nfc.live svg, .banner.pulse svg { animation: pulse 1.4s ease-in-out infinite; }
+  .banner.pulse svg { animation: pulse 1.4s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: 0.35; } }
 }
 </style>
@@ -170,10 +165,6 @@ kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius:
       <section class="decide" id="decide">
         <div class="decide-head">
           <h2 id="decide-h">Add a tip</h2>
-          <span class="nfc" id="nfc">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8.5a5 5 0 0 1 0 7"/><path d="M9.5 6a9 9 0 0 1 0 12"/><path d="M13 3.5a13 13 0 0 1 0 17"/></svg>
-            <span id="nfc-text">Tap phone here for spoken options</span>
-          </span>
         </div>
 
         <div class="banner" id="banner" hidden>
@@ -269,8 +260,6 @@ function showStep(step) {
 function phoneTapped() {
   if (state.step === "pay") return;
   state.phone = true;
-  $("nfc").classList.add("live");
-  $("nfc-text").textContent = "Customer's phone connected";
   $("decide").classList.add("waiting");
   banner("Options open on the customer's phone");
 }
@@ -316,7 +305,6 @@ function pickReceipt(kind, viaPhone) {
     const tipText = tipWords();
     $("pay-meta").textContent = `${tipText} · ${RECEIPTS[kind]}` + (state.phone ? " · chosen on the customer's phone" : "");
     banner(null);
-    $("nfc-text").textContent = "Tap to pay";
     showStep("pay");
   }, 1400);
 }
@@ -324,8 +312,6 @@ function pickReceipt(kind, viaPhone) {
 function reset() {
   clearTimeout(state.timer);
   Object.assign(state, { phone: false, tip: 0, pct: 0, tipChosen: false, pendingReceipt: null });
-  $("nfc").classList.remove("live");
-  $("nfc-text").textContent = "Tap phone here for spoken options";
   $("o-tip-row").hidden = true;
   $("o-total").textContent = fmt(SUBTOTAL);
   banner(null);
