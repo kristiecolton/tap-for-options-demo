@@ -125,6 +125,9 @@ h2 { margin: 0; font-size: 2rem; line-height: 1.15; }
 }
 .presenter button:hover { border-color: var(--page-muted); }
 kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--panel-line); color: var(--page-muted); margin-left: 4px; }
+.sync { display: inline-flex; align-items: center; gap: 8px; font-size: 0.92rem; }
+.sync::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--page-muted); }
+.sync[data-ok="1"]::before { background: var(--good); }
 .presenter p { margin: 0; color: var(--page-muted); font-size: 0.88rem; }
 
 :focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
@@ -191,6 +194,10 @@ kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius:
   <section class="presenter" id="presenter" aria-label="Presenter controls">
     <h3>Presenter controls · concept demo</h3>
     <div class="row">
+      <span class="label">Live sync</span>
+      <span id="sync" class="sync" data-ok="0">Connecting…</span>
+    </div>
+    <div class="row">
       <span class="label">Phone</span>
       <button type="button" data-act="tap">Phone tapped<kbd>P</kbd></button>
     </div>
@@ -221,7 +228,7 @@ const SUBTOTAL = 24;
 const RECEIPTS = { text: "Text message receipt", email: "Email receipt", none: "No receipt" };
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => "$" + n.toFixed(2);
-const state = { step: "tip", phone: false, tip: 0, pct: 0, timer: null };
+const state = { step: "tip", phone: false, tip: 0, pct: 0, tipChosen: false, pendingReceipt: null, timer: null };
 
 function banner(text, kind) {
   const b = $("banner");
@@ -251,28 +258,45 @@ function phoneTapped() {
   banner("Options open on the customer's phone");
 }
 
-function pickTip(pct, viaPhone) {
-  if (state.step !== "tip") return;
+function tipWords() {
+  if (state.pct) return `${state.pct}% tip`;
+  return state.tip ? `${fmt(state.tip)} tip` : "No tip";
+}
+
+// amount is only passed for a custom tip sent from the phone; otherwise it comes from pct.
+function pickTip(pct, viaPhone, amount) {
+  if (state.step !== "tip" || state.tipChosen) return;
   if (viaPhone && !state.phone) phoneTapped();
   clearTimeout(state.timer);
+  state.tipChosen = true;
   state.pct = pct;
-  state.tip = Math.round(SUBTOTAL * pct) / 100;
-  document.querySelector(`#tip-tiles [data-pct="${pct}"]`).classList.add("chosen");
-  $("o-tip-row").hidden = pct === 0;
+  state.tip = Number.isFinite(amount) ? amount : Math.round(SUBTOTAL * pct) / 100;
+  const tile = document.querySelector(`#tip-tiles [data-pct="${pct}"]`);
+  if (tile && (pct || state.tip === 0)) tile.classList.add("chosen");
+  $("o-tip-row").hidden = state.tip === 0;
   $("o-tip").textContent = fmt(state.tip);
   $("o-total").textContent = fmt(SUBTOTAL + state.tip);
-  if (viaPhone) banner(pct ? `Chosen on the customer's phone: ${pct}% tip (${fmt(state.tip)})` : "Chosen on the customer's phone: no tip", "good");
-  state.timer = setTimeout(() => showStep("receipt"), 1400);
+  if (viaPhone) banner(state.tip ? `Chosen on the customer's phone: ${tipWords()} (${fmt(state.tip)})` : "Chosen on the customer's phone: no tip", "good");
+  state.timer = setTimeout(() => {
+    showStep("receipt");
+    if (state.pendingReceipt) {
+      const kind = state.pendingReceipt;
+      state.pendingReceipt = null;
+      pickReceipt(kind, true);
+    }
+  }, 1400);
 }
 
 function pickReceipt(kind, viaPhone) {
+  // A receipt chosen on the phone before the terminal reaches the receipt screen waits for it.
+  if (state.step === "tip" && state.tipChosen) { state.pendingReceipt = kind; return; }
   if (state.step !== "receipt") return;
   clearTimeout(state.timer);
   document.querySelector(`#receipt-tiles [data-receipt="${kind}"]`).classList.add("chosen");
   if (viaPhone) banner(`Chosen on the customer's phone: ${RECEIPTS[kind].toLowerCase()}`, "good");
   state.timer = setTimeout(() => {
     $("pay-total").textContent = fmt(SUBTOTAL + state.tip);
-    const tipText = state.pct ? `${state.pct}% tip` : "No tip";
+    const tipText = tipWords();
     $("pay-meta").textContent = `${tipText} · ${RECEIPTS[kind]}` + (state.phone ? " · chosen on the customer's phone" : "");
     banner(null);
     $("nfc-text").textContent = "Tap to pay";
@@ -282,7 +306,7 @@ function pickReceipt(kind, viaPhone) {
 
 function reset() {
   clearTimeout(state.timer);
-  Object.assign(state, { phone: false, tip: 0, pct: 0 });
+  Object.assign(state, { phone: false, tip: 0, pct: 0, tipChosen: false, pendingReceipt: null });
   $("nfc").classList.remove("live");
   $("nfc-text").textContent = "Tap phone here for spoken options";
   $("o-tip-row").hidden = true;
@@ -316,6 +340,34 @@ document.addEventListener("keydown", (e) => {
   const fn = KEYS[e.key.toLowerCase()];
   if (fn) { e.preventDefault(); fn(); }
 });
+
+// Live sync: the phone page posts each choice to this private ntfy.sh channel; the terminal listens here.
+const RELAY = "https://ntfy.sh/tfo-demo-fd51373db82be5cb";
+
+function setSync(text, ok) {
+  $("sync").textContent = text;
+  $("sync").dataset.ok = ok ? "1" : "0";
+}
+
+function handle(msg) {
+  if (msg.t === "open") { reset(); phoneTapped(); }
+  else if (msg.t === "tip") pickTip(Number(msg.pct) || 0, true, Number(msg.amount));
+  else if (msg.t === "receipt" && RECEIPTS[msg.kind]) pickReceipt(msg.kind, true);
+}
+
+if ("EventSource" in window) {
+  const es = new EventSource(RELAY + "/sse");
+  es.onopen = () => setSync("Connected. Choices on the phone appear here automatically.", true);
+  es.onerror = () => setSync("Reconnecting. Use the buttons below if needed.", false);
+  es.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.event === "message") handle(JSON.parse(d.message));
+    } catch (err) { /* ignore anything that isn't one of our messages */ }
+  };
+} else {
+  setSync("Not available in this browser. Use the buttons below.", false);
+}
 </script>
 </body>
 </html>
