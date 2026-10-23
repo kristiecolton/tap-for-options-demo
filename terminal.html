@@ -125,6 +125,19 @@ h2 { margin: 0; font-size: 2rem; line-height: 1.15; }
 }
 .presenter button:hover { border-color: var(--page-muted); }
 kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--panel-line); color: var(--page-muted); margin-left: 4px; }
+.presenter-toggle {
+  position: fixed; z-index: 5;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 0.85rem; padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--panel-line); background: var(--panel); color: var(--page-muted);
+  opacity: 0.55; cursor: pointer;
+}
+.presenter-toggle:hover, .presenter-toggle:focus-visible, .presenter-toggle[aria-expanded="true"] { opacity: 1; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--page-muted); }
+.sync-dot[data-ok="1"] { background: var(--good); }
+.presenter { margin-bottom: 72px; }
 .sync { display: inline-flex; align-items: center; gap: 8px; font-size: 0.92rem; }
 .sync::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--page-muted); }
 .sync[data-ok="1"]::before { background: var(--good); }
@@ -191,7 +204,11 @@ kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius:
     </div>
   </div>
 
-  <section class="presenter" id="presenter" aria-label="Presenter controls">
+  <button type="button" class="presenter-toggle" id="presenter-toggle" aria-expanded="false" aria-controls="presenter">
+    <span class="sync-dot" id="sync-dot" data-ok="0" aria-hidden="true"></span><span id="toggle-text">Demo controls</span>
+  </button>
+
+  <section class="presenter" id="presenter" aria-label="Presenter controls" hidden>
     <h3>Presenter controls · concept demo</h3>
     <div class="row">
       <span class="label">Live sync</span>
@@ -219,7 +236,7 @@ kbd { font-family: inherit; font-size: 0.78rem; padding: 1px 5px; border-radius:
       <button type="button" data-act="reset">Reset<kbd>R</kbd></button>
       <button type="button" data-act="hide">Hide this panel<kbd>H</kbd></button>
     </div>
-    <p>Use these to make the terminal react as you choose on the phone. Press H to hide or show this panel while recording.</p>
+    <p>Use these to make the terminal react as you choose on the phone. Open or close this panel with the Demo controls button in the corner, or press H. The keys work while it's closed.</p>
   </section>
 </div>
 
@@ -316,8 +333,14 @@ function reset() {
 }
 
 function togglePresenter() {
-  $("presenter").hidden = !$("presenter").hidden;
+  const panel = $("presenter");
+  panel.hidden = !panel.hidden;
+  $("presenter-toggle").setAttribute("aria-expanded", String(!panel.hidden));
+  $("toggle-text").textContent = panel.hidden ? "Demo controls" : "Hide demo controls";
+  if (!panel.hidden) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
+
+$("presenter-toggle").addEventListener("click", togglePresenter);
 
 document.querySelectorAll("#tip-tiles .tile").forEach((t) => t.addEventListener("click", () => pickTip(Number(t.dataset.pct), false)));
 document.querySelectorAll("#receipt-tiles .tile").forEach((t) => t.addEventListener("click", () => pickReceipt(t.dataset.receipt, false)));
@@ -347,6 +370,8 @@ const RELAY = "https://ntfy.sh/tfo-demo-fd51373db82be5cb";
 function setSync(text, ok) {
   $("sync").textContent = text;
   $("sync").dataset.ok = ok ? "1" : "0";
+  $("sync-dot").dataset.ok = ok ? "1" : "0";
+  $("presenter-toggle").title = text;
 }
 
 function handle(msg) {
